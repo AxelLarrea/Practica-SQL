@@ -111,15 +111,35 @@ select porvotosinv();
  
 -- i) % total de votos obtenidos por cada lista, respecto de la totalidad de los votos.
 
+create or replace function porvotoslista() returns real as 
+$$
+declare
+	stot1 real;
+	stot2 real;
+	part real;
+	res real;
+begin
+	part := sum(votospartido) from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa;
+	stot1 := * from votos_inv;
+	stot2 := sum(votospartido) as cantidad_votos_total from votosmesapartido vmp;
+	res := (part/(stot1 + stot2))*100;
+	return res;
+end 
+$$
+language plpgsql;
+
+
+select porvotoslista();
+
+select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa group by nombrep;
 
 -- j) % total de votos obtenidos por cada lista, sólo de los votos válidos, esto sin tener en cuenta votos en blanco, nulos, recurridos e impugnados.
 
 
 -- k) Cantidad total de votos obtenidos por cada lista
-
+select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa group by nombrep;
 
 -- l) Lista ganadora por circuito
-
 
 -- m) Primeras cuatro fuerzas por escuela
 
