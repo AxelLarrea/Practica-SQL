@@ -32,10 +32,7 @@ create view f1 as (select (sum(v.blancos)+sum(v.nulos)+sum(v.recurridos)+sum(v.i
 
 create view m2 as (select sum(votospartido) as masc from votosmesapartido vmp join mesa m on m.nromesa=vmp.nromesa where m.nromesa like 'M%');
 create view f2 as (select sum(votospartido) as fem from votosmesapartido vmp join mesa m on m.nromesa=vmp.nromesa where m.nromesa like 'F%');*/
-select * from m1;
-select * from m2;
-select * from f1;
-select * from f2;
+
 
 select (f1.fem + f2.fem) as votos_femeninos, (m1.masc + m2.masc) as votos_masculinos from f1, f2, m1, m2 where f1<>f2 and m1<>m2;
 
@@ -46,7 +43,7 @@ votosxmesa v join mesa m on v.nromesa=m.nromesa join escuela esc on m.idesc=esc.
 
 select nombrep, sum(votospartido) as cantidad_votos_total from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop group by nombrep;
 
-create or replace function votosxlista (lista text) returns real as 
+create or replace function votosxlista (lista text, _circuito text) returns real as 
 $$
 declare
 	cant1 real;
@@ -54,7 +51,7 @@ declare
 	stot2 real;
 	res real;
 begin
-	cant1 := sum(votospartido) from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa join escuela esc on m.idesc=esc.idesc join circuito circ on esc.idcircuito=circ.idcircuito where nombrep=lista and nombrecirc='SUBURBIO NORTE';
+	cant1 := sum(votospartido) from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa join escuela esc on m.idesc=esc.idesc join circuito circ on esc.idcircuito=circ.idcircuito where nombrep=lista and nombrecirc=_circuito;
 	stot1 := (sum(v.blancos)+sum(v.nulos)+sum(v.recurridos)+sum(v.impugnados)) as votos from votosxmesa v;
 	stot2 := sum(votospartido) as cantidad_votos_total from votosmesapartido vmp;
 	res := (cant1/(stot1 + stot2))*100;
@@ -63,7 +60,8 @@ end
 $$
 language plpgsql;
 
-select votosxlista('PJ');
+
+select votosxlista('PJ', 'SUBURBIO NORTE');
 
 
 -- f) Cantidad de votos obtenidos por una lista xx en la escuela “92 Tucumán”
@@ -85,8 +83,10 @@ language plpgsql;
 
 select votosxlistesc('PJ');
 
+
 -- g) Cantidad total de votos válidos (sin contar blancos, nulos, recurridos e impugnados).
 select sum(votospartido) as canti_votos_validos from votosmesapartido vmp;
+
 
 -- h) % de votos no válidos.
 /*create view votos_inv as (select (sum(v.blancos)+sum(v.nulos)+sum(v.recurridos)+sum(v.impugnados)) as votos from votosxmesa v);*/
@@ -111,27 +111,6 @@ select porvotosinv();
  
 -- i) % total de votos obtenidos por cada lista, respecto de la totalidad de los votos.
 
-create or replace function porvotoslista() returns real as 
-$$
-declare
-	stot1 real;
-	stot2 real;
-	part real;
-	res real;
-begin
-	part := sum(votospartido) from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa;
-	stot1 := * from votos_inv;
-	stot2 := sum(votospartido) as cantidad_votos_total from votosmesapartido vmp;
-	res := (part/(stot1 + stot2))*100;
-	return res;
-end 
-$$
-language plpgsql;
-
-
-select porvotoslista();
-
-select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa group by nombrep;
 
 -- j) % total de votos obtenidos por cada lista, sólo de los votos válidos, esto sin tener en cuenta votos en blanco, nulos, recurridos e impugnados.
 
@@ -139,9 +118,12 @@ select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vm
 -- k) Cantidad total de votos obtenidos por cada lista
 select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa group by nombrep;
 
+
 -- l) Lista ganadora por circuito
 
+
 -- m) Primeras cuatro fuerzas por escuela
+-- TIP: Utilizar palabra reservada Limit con un límite de 4, es decir, limit=4 o limit 4.
 
 
 -- n)Diferencia en votos y en porcentaje entre las dos primeras fuerzas
@@ -154,3 +136,4 @@ select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vm
 
 
 -- q) Partidos que hayan alcanzado al menos el 5% de los votos
+
