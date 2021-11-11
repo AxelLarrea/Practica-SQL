@@ -159,7 +159,11 @@ select * from votxparcir where votxparcir.nombrecirc='SUBURBIO SUR' and votxparc
 
 -- m) Primeras cuatro fuerzas por escuela
 -- TIP: Utilizar palabra reservada Limit con un límite de 4, es decir, limit=4 o limit 4.
+select sum(votospartido), nombreescuela, nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa join escuela esc on m.idesc=esc.idesc group by nombreescuela, nombrep order by nombreescuela;
 
+select sum(votospartido), nombreescuela, nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa join escuela esc on m.idesc=esc.idesc group by nombreescuela, nombrep order by nombreescuela;
+
+select * from escuela;
 
 -- n)Diferencia en votos y en porcentaje entre las dos primeras fuerzas
 
