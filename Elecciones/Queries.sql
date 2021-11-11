@@ -52,8 +52,8 @@ declare
 	res real;
 begin
 	cant1 := sum(votospartido) from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa join escuela esc on m.idesc=esc.idesc join circuito circ on esc.idcircuito=circ.idcircuito where nombrep=lista and nombrecirc=_circuito;
-	stot1 := (sum(v.blancos)+sum(v.nulos)+sum(v.recurridos)+sum(v.impugnados)) as votos from votosxmesa v;
-	stot2 := sum(votospartido) as cantidad_votos_total from votosmesapartido vmp;
+	stot1 := * from votos_inv;
+	stot2 := * from votos_valid;
 	res := (cant1/(stot1 + stot2))*100;
 	return res;
 end 
@@ -62,7 +62,6 @@ language plpgsql;
 
 
 select votosxlista('PJ', 'SUBURBIO NORTE');
-
 
 -- f) Cantidad de votos obtenidos por una lista xx en la escuela “92 Tucumán”
 
@@ -85,7 +84,9 @@ select votosxlistesc('PJ');
 
 
 -- g) Cantidad total de votos válidos (sin contar blancos, nulos, recurridos e impugnados).
-select sum(votospartido) as canti_votos_validos from votosmesapartido vmp;
+/*create view votos_valid as (select sum(votospartido) as canti_votos_validos from votosmesapartido vmp);*/
+
+select * from votos_valid;
 
 
 -- h) % de votos no válidos.
@@ -110,9 +111,11 @@ select porvotosinv();
 
  
 -- i) % total de votos obtenidos por cada lista, respecto de la totalidad de los votos.
+select (sum(votospartido)*100/((select * from votos_valid)+(select * from votos_inv))) as porcentaje, nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa group by nombrep;
 
 
 -- j) % total de votos obtenidos por cada lista, sólo de los votos válidos, esto sin tener en cuenta votos en blanco, nulos, recurridos e impugnados.
+select (sum(votospartido)*100/(select * from votos_valid)) as porcentaje, nombrep from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa group by nombrep;
 
 
 -- k) Cantidad total de votos obtenidos por cada lista
@@ -120,6 +123,38 @@ select sum(votospartido), nombrep from votosmesapartido vmp join partido p on vm
 
 
 -- l) Lista ganadora por circuito
+create view votxparcir as (select sum(votospartido), nombrep, nombrecirc from votosmesapartido vmp join partido p on vmp.nropartido=p.nrop join mesa m on m.nromesa=vmp.nromesa join escuela esc on m.idesc=esc.idesc join circuito circ on esc.idcircuito=circ.idcircuito group by nombrep, nombrecirc order by nombrecirc);
+
+create or replace function listagan(circuito text) returns text as
+$$
+declare
+	res text;
+begin
+	res := nombrep from votxparcir where votxparcir.nombrecirc=circuito and votxparcir.sum >= all
+		(select votxparcir.sum from votxparcir where votxparcir.nombrecirc=circuito) group by votxparcir.sum, nombrep;
+	return res;
+end
+$$
+language plpgsql;
+
+select listagan('CIUDAD NORTE')
+select listagan('CIUDAD SUD')
+select listagan('COLONIA PERFECCION')
+select listagan('SANTA CANDIDA')
+select listagan('SUBURBIO NORTE')
+select listagan('SUBURBIO SUR')
+
+select * from votxparcir where votxparcir.nombrecirc='SUBURBIO SUR' and votxparcir.sum >= all
+	(select votxparcir.sum from votxparcir where votxparcir.nombrecirc='SUBURBIO SUR') group by votxparcir.sum, nombrep, nombrecirc order by nombrecirc;
+
+/*
+	CIUDAD NORTE: ACUERDO CIV.SOCIAL
+	CIUDAD SUD: ACUERDO CIV.SOCIAL
+	COLONIA PERFECCION: PJ
+	SANTA CANDIDA: PJ
+	SUBURBIO NORTE: PJ
+	SUBURBIO SUR:PJ
+*/
 
 
 -- m) Primeras cuatro fuerzas por escuela
